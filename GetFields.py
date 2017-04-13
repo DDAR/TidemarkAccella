@@ -27,4 +27,9 @@ for field in fields:
     t = t + '\n'
     f.write(t)
 
+        # - Test to see what fields are called so I can drop them
+        #fields = arcpy.ListFields(layer)
+        #for field in fields:
+        #    print("{0}    -    {1} with a length of {2}").format(field.name, field.type, field.length)
+
 f.close()
