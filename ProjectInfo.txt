@@ -1,0 +1,14 @@
+Tidemark - Accella Project
+
+Date Started: 04/13/2017
+
+Author: DD Arnett - GIS Analysis Yakima County GIS
+
+Purpose: Build python scripts that can build specific designed tables to be imported into the Tidemark\Accella database.
+
+----------------------------------------------  * * ------------------------------------------------
+04/13/2017
+- briefed about the project
+- set up a git hub repository - TidemarkAccella
+- set up folder to house python scripts - d:\Data\DDA\Python\Tidemark
+- 
