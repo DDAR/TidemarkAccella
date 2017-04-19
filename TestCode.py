@@ -25,11 +25,12 @@ def killObject( object ):
 
 def addTableRec(source, parcid, census, commish, marketv, insnum, marketland, legalLine, parc, parcArea, township, rangeT, section, primary):
     #cxnCursor = con.cursor()
-    insertStr = """INSERT INTO dbo.Parcel_base(SOURCE_SEQ_NBR, L1_PARCEL_NBR, L1_CENSUS_TRACT, L1_COUNCIL_DISTRICT, L1_IMPROVED_VALUE, L1_INSPECTION_DISTRICT, L1_LAND_VALUE, L1_LEGAL_DESC, L1_PARCEL, L1_PARCEL_AREA, GIS_ID, L1_TOWNSHIP, L1_RANGE, L1_SECTION, L1_PRIMARY_PAR_FLG)
-     VALUES('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}', '{8}', '{9}', '{10}', '{11}', '{12}', '{13}', '{14}')""".format(source, parcid, census, commish, marketv, insnum, marketland, legalLine, parc, parcArea, parcid, township, rangeT, section, primary)
+    #insertStr = """INSERT INTO dbo.Parcel_base(SOURCE_SEQ_NBR, L1_PARCEL_NBR, L1_CENSUS_TRACT, L1_COUNCIL_DISTRICT, L1_IMPROVED_VALUE, L1_INSPECTION_DISTRICT, L1_LAND_VALUE, L1_LEGAL_DESC, L1_PARCEL, L1_PARCEL_AREA, GIS_ID, L1_TOWNSHIP, L1_RANGE, L1_SECTION, L1_PRIMARY_PAR_FLG)
+     #VALUES('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}', '{8}', '{9}', '{10}', '{11}', '{12}', '{13}', '{14}')""".format(source, parcid, census, commish, marketv, insnum, marketland, legalLine, parc, parcArea, parcid, township, rangeT, section, primary)
+    insertStr = """INSERT INTO dbo.Parcel_base(SOURCE_SEQ_NBR, L1_PARCEL_NBR, L1_LEGAL_DESC) VALUES ('{0}', '{1}', '{2}')""".format(xSource, xParcid, xLegalLine)
     print insertStr
     cursor.execute(insertStr)
-    cursor.commit()
+    con.commit()
 
 # Set Date and other variables
 taxSpatialRecord = r"M:\Geodatabase\Taxlots\Taxlots.gdb\parcels"
@@ -41,7 +42,7 @@ commishRec = r"M:\Geodatabase\boundary\districts.gdb\voting\commissioner"
 outRecCom = r"R:\Geodatabase\Taxlots\Accela.gdb\Parcel_BaseTestCom"
 censusRec = r"M:\Geodatabase\census\Census 2010 Geography.gdb\Tracts"
 outRecCen = r"R:\Geodatabase\Taxlots\Accela.gdb\Parcel_BaseTestCen"
-#outFields = ["PARC", "ASSESSOR_N", "MKT_LAND", "MKT_IMPVT", "SIZE", "INS_NUM", "LEGAL_LINE", "RANGE", "TOWNSHIP", "SECTION", "PRIMARY_PAR_FLG", "SOURCE_SEQ_NBR"]
+outFields = ["PARC", "ASSESSOR_N", "MKT_LAND", "MKT_IMPVT", "SIZE", "INS_NUM", "LEGAL_LINE", "RANGE", "TOWNSHIP", "SECTION", "PRIMARY_PAR_FLG", "SOURCE_SEQ_NBR"]
 remFields = ["AREA", "PERIMETER", "SYMBOL", "ImageURL", "BioURL", "NAME"]
 fieldCom = "COMMISH"
 dropfieldsINSJ = ["Join_Count", "TARGET_FID", "RTS"]
@@ -72,7 +73,10 @@ try:
         xInsnum = row.getValue("INS_NUM")
         xMarketLand = row.getValue("MKT_LAND")
         xxLegalLine = row.getValue("LEGAL_LINE")
-        xLegalLine =  xLegalLine.replace("'", "''")
+        if xxLegalLine is None:
+            xLegalLine = ''
+        else:
+            xLegalLine =  xxLegalLine.replace("'", "''")
         xParc = row.getValue("PARC")
         xParcArea = row.getValue("SIZE")
         xTownship = row.getValue("TOWNSHIP")
