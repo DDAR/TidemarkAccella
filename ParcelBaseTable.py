@@ -143,6 +143,18 @@ def main():
 		arcpy.DeleteField_management(outRecords, "RTS")
 		spatialJoins()
 
+##        # Access the database and remove the current data
+##		con = pyodbc.connect(r'DRIVER={ODBC Driver 11 for SQL Server};' r'SERVER=172.20.10.141;' r'DATABASE=Accela;' r'UID=Accela;' r'PWD=Pw4accela')
+##		cursor = con.cursor()
+##		cursor.execute('TRUNCATE TABLE dbo.Parcel_base;')
+##		con.commit()
+##		con.close()
+##
+##        # Insert new table into table
+##		del cursor
+
+
+
 	except arcpy.ExecuteError:
 	   msgs = arcpy.GetMessages(2)
 	   print arcpy.AddMessage("There was a problem...script bailing")
