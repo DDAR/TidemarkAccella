@@ -81,6 +81,9 @@ def spatialJoins():
     except IOError as e:
         print 'Exception error is: %s' % e
 
+#def addTableRec(source, parcid, census, commish, marketv, insnum, marketland, legalLine, parc, parcArea, township, range, section, primary):
+
+
 
 def main():
 	try:
