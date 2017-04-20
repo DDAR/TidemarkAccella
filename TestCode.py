@@ -14,6 +14,9 @@ import os
 import sys
 import arcpy
 import pyodbc
+import string
+reload(sys)
+sys.setdefaultencoding('utf8')
 
 def message(msg):
 	LocalTime = time.asctime(time.localtime(time.time()))
@@ -23,15 +26,31 @@ def killObject( object ):
 	if arcpy.Exists(object):
 		arcpy.Delete_management(object)
 
-def addTableRec(source, parcid, census, commish, marketv, insnum, marketland, legalLine, parc, parcArea, township, rangeT, section, primary):
-    #cxnCursor = con.cursor()
-    #insertStr = """INSERT INTO dbo.Parcel_base(SOURCE_SEQ_NBR, L1_PARCEL_NBR, L1_CENSUS_TRACT, L1_COUNCIL_DISTRICT, L1_IMPROVED_VALUE, L1_INSPECTION_DISTRICT, L1_LAND_VALUE, L1_LEGAL_DESC, L1_PARCEL, L1_PARCEL_AREA, GIS_ID, L1_TOWNSHIP, L1_RANGE, L1_SECTION, L1_PRIMARY_PAR_FLG)
-     #VALUES('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}', '{8}', '{9}', '{10}', '{11}', '{12}', '{13}', '{14}')""".format(source, parcid, census, commish, marketv, insnum, marketland, legalLine, parc, parcArea, parcid, township, rangeT, section, primary)
-    insertStr = """INSERT INTO dbo.Parcel_base(SOURCE_SEQ_NBR, L1_PARCEL_NBR, L1_LEGAL_DESC) VALUES ('{0}', '{1}', '{2}')""".format(xSource, xParcid, xLegalLine)
-    print insertStr
-    cursor.execute(insertStr)
-    con.commit()
+def SQLEsc(s):
+    if s == None:
+        return "NULL"
+    else:
+        return "'"+string.replace(s, "'", "''")+"'"
 
+def SQLEsc2(s):
+    if s == None:
+        return "NULL"
+    else:
+        return s
+
+def addTableRec(source, parcid, census, commish, marketv, insnum, marketland, legalLine, parc, parcArea, township, rangeT, section, primary):
+    try:
+        #cxnCursor = con.cursor()
+        #insertStr = """INSERT INTO dbo.Parcel_base(SOURCE_SEQ_NBR, L1_PARCEL_NBR, L1_CENSUS_TRACT, L1_COUNCIL_DISTRICT, L1_IMPROVED_VALUE, L1_INSPECTION_DISTRICT, L1_LAND_VALUE, L1_LEGAL_DESC, L1_PARCEL, L1_PARCEL_AREA, GIS_ID, L1_TOWNSHIP, L1_RANGE, L1_SECTION, L1_PRIMARY_PAR_FLG)
+         #VALUES('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}', '{8}', '{9}', '{10}', '{11}', '{12}', '{13}', '{14}')""".format(source, parcid, census, commish, marketv, insnum, marketland, legalLine, parc, parcArea, parcid, township, rangeT, section, primary)
+        insertStr = """INSERT INTO dbo.Parcel_base(SOURCE_SEQ_NBR, L1_PARCEL_NBR, l1_Census_tract, L1_Council_District, L1_Improved_Value, L1_LEGAL_DESC) VALUES ('{0}', '{1}', '{2}', '{3}', {4}, {5})""".format(xSource, xParcid, xCensus, xCommish, SQLEsc2(xMarketv), SQLEsc(xLegalLine))
+        #print insertStr
+        cursor.execute(insertStr)
+        con.commit()
+    except IOError as e:
+        print "Error in AddTable Rec"
+        print 'Exception error is: %s' % e
+        print insertStr
 # Set Date and other variables
 taxSpatialRecord = r"M:\Geodatabase\Taxlots\Taxlots.gdb\parcels"
 partyTable = r"M:\Geodatabase\Taxlots\Tables.gdb\Party"
@@ -72,11 +91,12 @@ try:
         xMarketv = row.getValue("MKT_IMPVT")
         xInsnum = row.getValue("INS_NUM")
         xMarketLand = row.getValue("MKT_LAND")
-        xxLegalLine = row.getValue("LEGAL_LINE")
-        if xxLegalLine is None:
-            xLegalLine = ''
-        else:
-            xLegalLine =  xxLegalLine.replace("'", "''")
+        xLegalLine = row.getValue("LEGAL_LINE")
+##        xxLegalLine = row.getValue("LEGAL_LINE")
+##        if xxLegalLine is None:
+##            xLegalLine = "NULL"
+##        else:
+##            xLegalLine =  xxLegalLine.replace("'", "''")
         xParc = row.getValue("PARC")
         xParcArea = row.getValue("SIZE")
         xTownship = row.getValue("TOWNSHIP")
