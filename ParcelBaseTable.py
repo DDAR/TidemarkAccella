@@ -18,6 +18,8 @@ import pyodbc
 from arcpy import env
 from datetime import date
 from datetime import datetime
+reload(sys)
+sys.setdefaultencoding('utf8')
 
 
 # Variables ---------------------------
@@ -31,6 +33,7 @@ outRecords = r"R:\Geodatabase\Taxlots\Accela.gdb\Parcel_BaseTest"
 outRecCom = r"R:\Geodatabase\Taxlots\Accela.gdb\Parcel_BaseTestCom"
 #outRecCen = r"R:\Geodatabase\Taxlots\Accela.gdb\Parcel_BaseTestCen"
 remFields = ["AREA", "PERIMETER", "SYMBOL", "ImageURL", "BioURL", "NAME"]
+remFields2 = ["STATEFP10", "COUNTYFP10", "TRACTCE10", "GEOID10", "NAMELSAD10", "MTFCC10", "FUNCSTAT10", "ALAND10", "AWATER10", "INTPTLAT10", "INTPTLON10"]
 dropfieldsINSJ = ["Join_Count", "TARGET_FID"]
 layer = "managetaxlots"
 whereClauseSEl = '"PARC" > 10000 AND "PARC" < 50000'
@@ -81,7 +84,6 @@ def spatialJoins():
     except IOError as e:
         print 'Exception error is: %s' % e
 
-#def addTableRec(source, parcid, census, commish, marketv, insnum, marketland, legalLine, parc, parcArea, township, range, section, primary):
 def SQLEsc(s):
     if s == None:
         return "NULL"
@@ -94,19 +96,19 @@ def SQLEsc2(s):
     else:
         return s
 
-def addTableRec(source, parcid, census, commish, marketv, insnum, marketland, legalLine, parc, parcArea, township, rangeT, section, primary):
-    try:
-        #cxnCursor = con.cursor()
-        #insertStr = """INSERT INTO dbo.Parcel_base(SOURCE_SEQ_NBR, L1_PARCEL_NBR, L1_CENSUS_TRACT, L1_COUNCIL_DISTRICT, L1_IMPROVED_VALUE, L1_INSPECTION_DISTRICT, L1_LAND_VALUE, L1_LEGAL_DESC, L1_PARCEL, L1_PARCEL_AREA, GIS_ID, L1_TOWNSHIP, L1_RANGE, L1_SECTION, L1_PRIMARY_PAR_FLG)
-         #VALUES('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}', '{8}', '{9}', '{10}', '{11}', '{12}', '{13}', '{14}')""".format(source, parcid, census, commish, marketv, insnum, marketland, legalLine, parc, parcArea, parcid, township, rangeT, section, primary)
-        insertStr = """INSERT INTO dbo.Parcel_base(SOURCE_SEQ_NBR, L1_PARCEL_NBR, l1_Census_tract, L1_Council_District, L1_Improved_Value, L1_Inspection_district, L1_Land_Value, L1_LEGAL_DESC, L1_Parcel, L1_Parcel_Area, GIS_ID, L1_Township, L1_Range, L1_Section, L1_Primary_Par_Flg) VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14})""".format(SQLEsc2(xSource), SQLEsc2(xParcid), SQLEsc2(xCensus), SQLEsc2(xCommish), SQLEsc2(xMarketv), SQLEsc2(xInsnum), SQLEsc2(xMarketLand), SQLEsc(xLegalLine), SQLEsc2(xParc), SQLEsc2(xParcArea), SQLEsc2(xParcid), SQLEsc2(xTownship), SQLEsc2(xRangeT), SQLEsc2(xSection), SQLEsc(primary))
-        #print insertStr
-        cursor.execute(insertStr)
-        con.commit()
-    except IOError as e:
-        print "Error in AddTable Rec"
-        print 'Exception error is: %s' % e
-        print insertStr
+##def addTableRec(source, parcid, census, commish, marketv, insnum, marketland, legalLine, parc, parcArea, township, rangeT, section, primary, cursort):
+##    try:
+##        #cxnCursor = con.cursor()
+##        #insertStr = """INSERT INTO dbo.Parcel_base(SOURCE_SEQ_NBR, L1_PARCEL_NBR, L1_CENSUS_TRACT, L1_COUNCIL_DISTRICT, L1_IMPROVED_VALUE, L1_INSPECTION_DISTRICT, L1_LAND_VALUE, L1_LEGAL_DESC, L1_PARCEL, L1_PARCEL_AREA, GIS_ID, L1_TOWNSHIP, L1_RANGE, L1_SECTION, L1_PRIMARY_PAR_FLG)
+##         #VALUES('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}', '{8}', '{9}', '{10}', '{11}', '{12}', '{13}', '{14}')""".format(source, parcid, census, commish, marketv, insnum, marketland, legalLine, parc, parcArea, parcid, township, rangeT, section, primary)
+##        insertStr = """INSERT INTO dbo.Parcel_base(SOURCE_SEQ_NBR, L1_PARCEL_NBR, l1_Census_tract, L1_Council_District, L1_Improved_Value, L1_Inspection_district, L1_Land_Value, L1_LEGAL_DESC, L1_Parcel, L1_Parcel_Area, GIS_ID, L1_Township, L1_Range, L1_Section, L1_Primary_Par_Flg) VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14})""".format(SQLEsc2(source), SQLEsc2(parcid), SQLEsc2(census), SQLEsc2(commish), SQLEsc2(marketv), SQLEsc2(insnum), SQLEsc2(marketland), SQLEsc(legalLine), SQLEsc2(parc), SQLEsc2(parcArea), SQLEsc2(parcid), SQLEsc2(township), SQLEsc2(rangeT), SQLEsc2(section), SQLEsc(primary))
+##        #print insertStr
+##        cursort.execute(insertStr)
+##        con.commit()
+##    except IOError as e:
+##        print "Error in AddTable Rec"
+##        print 'Exception error is: %s' % e
+##        print insertStr
 
 
 def main():
@@ -197,9 +199,11 @@ def main():
 			xSection = row.getValue("SECTION")
 			xPrimary = row.getValue("PRIMARY_PAR_FLG")
 
-			addTableRec(xSource, xParcid, xCensus, xCommish, xMarketv, xInsnum, xMarketLand, xLegalLine, xParc, xParcArea, xTownship, xRangeT, xSection, xPrimary)
-
-
+			#addTableRec(xSource, xParcid, xCensus, xCommish, xMarketv, xInsnum, xMarketLand, xLegalLine, xParc, xParcArea, xTownship, xRangeT, xSection, xPrimary, cursort)
+			insertStr = """INSERT INTO dbo.Parcel_base(SOURCE_SEQ_NBR, L1_PARCEL_NBR, l1_Census_tract, L1_Council_District, L1_Improved_Value, L1_Inspection_district, L1_Land_Value, L1_LEGAL_DESC, L1_Parcel, L1_Parcel_Area, GIS_ID, L1_Township, L1_Range, L1_Section, L1_Primary_Par_Flg) VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14})""".format(SQLEsc2(xSource), SQLEsc2(xParcid), SQLEsc2(xCensus), SQLEsc2(xCommish), SQLEsc2(xMarketv), SQLEsc2(xInsnum), SQLEsc2(xMarketLand), SQLEsc(xLegalLine), SQLEsc2(xParc), SQLEsc2(xParcArea), SQLEsc2(xParcid), SQLEsc2(xTownship), SQLEsc2(xRangeT), SQLEsc2(xSection), SQLEsc(xPrimary))
+			#print insertStr
+			cursort.execute(insertStr)
+			con.commit()
 
 		con.close()
 		del cursort
