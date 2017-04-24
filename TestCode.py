@@ -92,11 +92,6 @@ try:
         xInsnum = row.getValue("INS_NUM")
         xMarketLand = row.getValue("MKT_LAND")
         xLegalLine = row.getValue("LEGAL_LINE")
-##        xxLegalLine = row.getValue("LEGAL_LINE")
-##        if xxLegalLine is None:
-##            xLegalLine = "NULL"
-##        else:
-##            xLegalLine =  xxLegalLine.replace("'", "''")
         xParc = row.getValue("PARC")
         xParcArea = row.getValue("SIZE")
         xTownship = row.getValue("TOWNSHIP")
