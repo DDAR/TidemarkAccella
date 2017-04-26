@@ -29,16 +29,17 @@ legalTable = r"M:\Geodatabase\Taxlots\Tables.gdb\Legal"
 propTable = r"M:\Geodatabase\Taxlots\Tables.gdb\Property"
 commishRec = r"M:\Geodatabase\boundary\districts.gdb\voting\commissioner"
 censusRec = r"M:\Geodatabase\census\Census 2010 Geography.gdb\Tracts"
-outRecords = r"R:\Geodatabase\Taxlots\Accela.gdb\Parcel_BaseTest"
+outRecords = r"R:\Geodatabase\Taxlots\Accela.gdb\Parcels_AddressTest1"
+outRecords2 = r"R:\Geodatabase\Taxlots\Accela.gdb\Parcels_AddressTest"
 outRecCom = r"R:\Geodatabase\Taxlots\Accela.gdb\Parcel_BaseTestCom"
 #outRecCen = r"R:\Geodatabase\Taxlots\Accela.gdb\Parcel_BaseTestCen"
 remFields = ["AREA", "PERIMETER", "SYMBOL", "ImageURL", "BioURL", "NAME"]
 remFields2 = ["STATEFP10", "COUNTYFP10", "TRACTCE10", "GEOID10", "NAMELSAD10", "MTFCC10", "FUNCSTAT10", "ALAND10", "AWATER10", "INTPTLAT10", "INTPTLON10"]
 dropfieldsINSJ = ["Join_Count", "TARGET_FID"]
-layer = "managetaxlots"
+layer = "manageAddtaxlots"
 whereClauseSEl = '"PARC" > 10000 AND "PARC" < 50000'
-field = "RTS"
-field2 = "RANGE"
+field = "ADDR_HN"
+field2 = "HOUSE"
 field3 = "TOWNSHIP"
 field4 = "SECTION"
 field5 = "SEC"
@@ -115,6 +116,7 @@ def main():
 	try:
 		# Initiate
 		killObject(outRecords)
+		killObject(outRecords2)
 		killObject(layer)
 		#---Set Evnironment Settings
 		arcpy.env.workspace = r"R:\Geodatabase\Taxlots\SupportFiles"
@@ -126,98 +128,85 @@ def main():
 		# Join Records to the properties table
 		arcpy.AddJoin_management(layer, "ASSESSOR_N", propTable, "ASSESSOR_N")
 
-		# join Records to the legal table
-		arcpy.AddJoin_management(layer, "ASSESSOR_N", legalTable, "ASSESSOR_N")
-
 		# Create the feature class in the geodatabase and drop fields
 		arcpy.CopyFeatures_management(layer, outRecords)
-		dropFields = ["AREA", "PERIMETER", "CNTYPARC_", "CNTYPARC_I", "ACRES", "OBJECTID_1", "ASSESSOR_N_1", "TCA", "TAX_YEAR", "USE_CODE", "LOCATED_ON", "NEW_CONST", "CU_LAND",
-		 "CU_IMPVT", "MEASURE", "SITUS_ADDR", "SITUS_ZIP", "SITUS_CITY", "CU_DATE", "CU_VALUE", "CYCLE", "NBHD", "INS_DATE", "CUR_CYCLE", "HOUSE_NO", "OBJECTID_12", "ASSESSOR_N_12",
-		 "LINE_NR", "SEG_CHILD_"]
+		dropFields = ["AREA", "PERIMETER", "CNTYPARC_", "CNTYPARC_I", "RTS", "PARC", "ACRES", "OBJECTID_1", "ASSESSOR_N_1", "TCA", "TAX_YEAR", "USE_CODE", "LOCATED_ON", "MKT_LAND", "MKT_IMPVT", "NEW_CONST", "CU_LAND",
+		 "CU_IMPVT", "SIZE", "MEASURE", "CU_DATE", "CU_VALUE", "CYCLE", "NBHD", "INS_DATE",  "INS_NUM", "CUR_CYCLE", "HOUSE_NO",]
 		arcpy.DeleteField_management(outRecords, dropFields)
 
 		# Delete Identical records
 		arcpy.DeleteIdentical_management(outRecords, "ASSESSOR_N")
 
-		# Add fields Range Township Section Primary_Par_FLG and SOURCE_SEQ_NBR and populate
-		arcpy.AddField_management(outRecords, "RANGE", "TEXT", 2)
-		arcpy.AddField_management(outRecords, "TOWNSHIP", "TEXT", 2)
-		arcpy.AddField_management(outRecords, "SECTION", "LONG", 4)
-		arcpy.AddField_management(outRecords, "PRIMARY_PAR_FLG", "TEXT", 1)
+		# Add fields
 		arcpy.AddField_management(outRecords, "SOURCE_SEQ_NBR", "SHORT", 2)
-		arcpy.AddField_management(outRecords, "SEC", "SHORT", 2)
+		arcpy.AddField_management(outRecords, "SERV_PROV_CODE", "TEXT", 15)
+		arcpy.AddField_management(outRecords, "HOUSE", "LONG")
+		arcpy.AddField_management(outRecords, "UNIT", "TEXT", 10)
+		arcpy.AddField_management(outRecords, "STR_SUFFIX", "TEXT", 30)
+		arcpy.AddField_management(outRecords, "SITUS_STATE", "TEXT", 30)
+
+		# Parse Address
+		address_fields = "SITUS_ADDR"
+		locator_style = "US Address - Single House"
+		add_fields = "HouseNum;PreDir;PreType;StreetName;SufType;SufDir"
+		arcpy.StandardizeAddresses_geocoding(outRecords, address_fields, locator_style, add_fields, outRecords2)
 
 		# Calculate Added Fields
-		expression = "'Y'"
-		arcpy.CalculateField_management(outRecords, "PRIMARY_PAR_FLG", expression, "PYTHON_9.3")
 		expression = "1"
-		arcpy.CalculateField_management(outRecords, "SOURCE_SEQ_NBR", expression, "PYTHON_9.3")
-		expression = "'!RTS!.strip()[:2]'"
-		cursor = arcpy.UpdateCursor(outRecords)
+		arcpy.CalculateField_management(outRecords2, "SOURCE_SEQ_NBR", expression, "PYTHON_9.3")
+		expression = "'YAKIMACO'"
+		arcpy.CalculateField_management(outRecords2, "SERV_PROV_CODE", expression, "PYTHON_9.3")
+		expression = "'WA'"
+		arcpy.CalculateField_management(outRecords2, "SITUS_STATE", expression, "PYTHON_9.3")
+
+		cursor = arcpy.UpdateCursor(outRecords2)
 		for row in cursor:
 			pickel = row.getValue(field)
-			pickel2 = str(pickel)
-			pickle2 = pickel2.strip()[:2]
-			pickle3 = pickel2.strip()[2:4]
-			row.setValue(field2, pickle2)
-			row.setValue(field3, pickle3)
-			pickle4 = pickel2.strip()[4:]
-			pickle4 = int(pickle4)
-			row.setValue(field4, pickle4)
-			row.setValue(field5, pickle4)
+##			pickel2 = int(pickel)
+			row.setValue(field2, pickel)
 			cursor.updateRow(row)
 
 		del row
 		del cursor
-		arcpy.DeleteField_management(outRecords, "RTS")
-		spatialJoins()
 
-		con = pyodbc.connect(r'DRIVER={ODBC Driver 11 for SQL Server};'
-		 r'SERVER=172.20.10.141;'
-		 r'DATABASE=Accela;'
-		 r'UID=Accela;'
-		 r'PWD=Pw4accela'
-		 )
-		cursort = con.cursor()
-		cursort.execute('TRUNCATE TABLE dbo.Parcel_base;')
-		con.commit()
-
-		outCursor = arcpy.SearchCursor(outRecords)
-		for row in outCursor:
-			xSource = row.getValue("SOURCE_SEQ_NBR")
-			xParcid = row.getValue("ASSESSOR_N")
-			xCensus = row.getValue("NAME10")
-			xCommish = row.getValue("COMMISH")
-			xMarketv = row.getValue("MKT_IMPVT")
-			xInsnum = row.getValue("INS_NUM")
-			xMarketLand = row.getValue("MKT_LAND")
-			xLegalLine = row.getValue("LEGAL_LINE")
-			xParc = row.getValue("PARC")
-			xParcArea = row.getValue("SIZE")
-			xTownship = row.getValue("TOWNSHIP")
-			xRangeT = row.getValue("RANGE")
-			xSection = row.getValue("SECTION")
-			xPrimary = row.getValue("PRIMARY_PAR_FLG")
-
-			#addTableRec(xSource, xParcid, xCensus, xCommish, xMarketv, xInsnum, xMarketLand, xLegalLine, xParc, xParcArea, xTownship, xRangeT, xSection, xPrimary, cursort)
-			insertStr = """INSERT INTO dbo.Parcel_base(SOURCE_SEQ_NBR, L1_PARCEL_NBR, l1_Census_tract, L1_Council_District, L1_Improved_Value, L1_Inspection_district, L1_Land_Value, L1_LEGAL_DESC, L1_Parcel, L1_Parcel_Area, GIS_ID, L1_Township, L1_Range, L1_Section, L1_Primary_Par_Flg) VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14})""".format(SQLEsc2(xSource), SQLEsc2(xParcid), SQLEsc2(xCensus), SQLEsc2(xCommish), SQLEsc2(xMarketv), SQLEsc2(xInsnum), SQLEsc2(xMarketLand), SQLEsc(xLegalLine), SQLEsc2(xParc), SQLEsc2(xParcArea), SQLEsc2(xParcid), SQLEsc2(xTownship), SQLEsc2(xRangeT), SQLEsc2(xSection), SQLEsc(xPrimary))
-			#print insertStr
-			cursort.execute(insertStr)
-			con.commit()
-
-		con.close()
-		del cursort
-
-##        # Access the database and remove the current data
-##		con = pyodbc.connect(r'DRIVER={ODBC Driver 11 for SQL Server};' r'SERVER=172.20.10.141;' r'DATABASE=Accela;' r'UID=Accela;' r'PWD=Pw4accela')
-##		cursor = con.cursor()
-##		cursor.execute('TRUNCATE TABLE dbo.Parcel_base;')
-##		con.commit()
-##		con.close()
+##		arcpy.DeleteField_management(outRecords, "RTS")
+##		spatialJoins()
 ##
-##        # Insert new table into table
-##		del cursor
-
+##		con = pyodbc.connect(r'DRIVER={ODBC Driver 11 for SQL Server};'
+##		 r'SERVER=172.20.10.141;'
+##		 r'DATABASE=Accela;'
+##		 r'UID=Accela;'
+##		 r'PWD=Pw4accela'
+##		 )
+##		cursort = con.cursor()
+##		cursort.execute('TRUNCATE TABLE dbo.Parcel_base;')
+##		con.commit()
+##
+##		outCursor = arcpy.SearchCursor(outRecords)
+##		for row in outCursor:
+##			xSource = row.getValue("SOURCE_SEQ_NBR")
+##			xParcid = row.getValue("ASSESSOR_N")
+##			xCensus = row.getValue("NAME10")
+##			xCommish = row.getValue("COMMISH")
+##			xMarketv = row.getValue("MKT_IMPVT")
+##			xInsnum = row.getValue("INS_NUM")
+##			xMarketLand = row.getValue("MKT_LAND")
+##			xLegalLine = row.getValue("LEGAL_LINE")
+##			xParc = row.getValue("PARC")
+##			xParcArea = row.getValue("SIZE")
+##			xTownship = row.getValue("TOWNSHIP")
+##			xRangeT = row.getValue("RANGE")
+##			xSection = row.getValue("SECTION")
+##			xPrimary = row.getValue("PRIMARY_PAR_FLG")
+##
+##			#addTableRec(xSource, xParcid, xCensus, xCommish, xMarketv, xInsnum, xMarketLand, xLegalLine, xParc, xParcArea, xTownship, xRangeT, xSection, xPrimary, cursort)
+##			insertStr = """INSERT INTO dbo.Parcel_base(SOURCE_SEQ_NBR, L1_PARCEL_NBR, l1_Census_tract, L1_Council_District, L1_Improved_Value, L1_Inspection_district, L1_Land_Value, L1_LEGAL_DESC, L1_Parcel, L1_Parcel_Area, GIS_ID, L1_Township, L1_Range, L1_Section, L1_Primary_Par_Flg) VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14})""".format(SQLEsc2(xSource), SQLEsc2(xParcid), SQLEsc2(xCensus), SQLEsc2(xCommish), SQLEsc2(xMarketv), SQLEsc2(xInsnum), SQLEsc2(xMarketLand), SQLEsc(xLegalLine), SQLEsc2(xParc), SQLEsc2(xParcArea), SQLEsc2(xParcid), SQLEsc2(xTownship), SQLEsc2(xRangeT), SQLEsc2(xSection), SQLEsc(xPrimary))
+##			#print insertStr
+##			cursort.execute(insertStr)
+##			con.commit()
+##
+##		con.close()
+##		del cursort
 
 
 	except arcpy.ExecuteError:
