@@ -26,22 +26,18 @@ import logging
 # Variables ---------------------------
 logging.basicConfig(filename=r'd:\data\temp\logFile.txt', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 taxSpatialRecord = r"M:\Geodatabase\Taxlots\Taxlots.gdb\parcels"
-partyTable = r"M:\Geodatabase\Taxlots\Tables.gdb\Party"
-legalTable = r"M:\Geodatabase\Taxlots\Tables.gdb\Legal"
 propTable = r"M:\Geodatabase\Taxlots\Tables.gdb\Property"
-commishRec = r"M:\Geodatabase\boundary\districts.gdb\voting\commissioner"
-censusRec = r"M:\Geodatabase\census\Census 2010 Geography.gdb\Tracts"
 outRecords = r"R:\Geodatabase\Taxlots\Accela.gdb\Parcels_AddressTest1"
 outRecords2 = r"R:\Geodatabase\Taxlots\Accela.gdb\Parcels_AddressTest"
-outRecCom = r"R:\Geodatabase\Taxlots\Accela.gdb\Parcel_BaseTestCom"
-#outRecCen = r"R:\Geodatabase\Taxlots\Accela.gdb\Parcel_BaseTestCen"
-remFields = ["AREA", "PERIMETER", "SYMBOL", "ImageURL", "BioURL", "NAME"]
-remFields2 = ["STATEFP10", "COUNTYFP10", "TRACTCE10", "GEOID10", "NAMELSAD10", "MTFCC10", "FUNCSTAT10", "ALAND10", "AWATER10", "INTPTLAT10", "INTPTLON10"]
+buildingLayer = r"R:\Geodatabase\Public_Safety\YakimaStreets.gdb\BuildingAddresses"
+outRecCom = r"R:\Geodatabase\Taxlots\Accela.gdb\ParcelAddress_BaseCom"
+remFields = ["STORIES", "ACRES", "OCCUPIED", "BorI", "BuildingClass", "BuildingName", "PRETYPE", "SUFDIR", "Author", "Updated", "LabelCM"]
+#, "ACRES", "OCCUPIED", "Borl", "BuildingClass", "BuildingName", "UNIT", "PREYTPE", "SUFDIR", "Author", "Updated", "LabelCM"]
 dropfieldsINSJ = ["Join_Count", "TARGET_FID"]
 layer = "manageAddtaxlots"
 whereClauseSEl = '"PARC" > 10000 AND "PARC" < 50000'
-field = "ADDR_HN"
-field2 = "HOUSE"
+field = 'ADDR_HN'
+field2 = 'HOUSE'
 field3 = "TOWNSHIP"
 field4 = "SECTION"
 field5 = "SEC"
@@ -57,30 +53,18 @@ def spatialJoins():
 		killObject(outRecCom)
 		#killObject(outRecCen)
 		fieldmappings = arcpy.FieldMappings()
-		fieldmappings.addTable(outRecords)
-		fieldmappings.addTable(commishRec)
+		fieldmappings.addTable(outRecords2)
+		fieldmappings.addTable(buildingLayer)
 		for rr in remFields:
 			x = fieldmappings.findFieldMapIndex(rr)
 			fieldmappings.removeFieldMap(x)
 
-		arcpy.SpatialJoin_analysis(outRecords, commishRec, outRecCom, "#", "#", fieldmappings)
+		arcpy.SpatialJoin_analysis(outRecords2, buildingLayer, outRecCom, "#", "#", fieldmappings)
 		for rs in dropfieldsINSJ:
 			arcpy.DeleteField_management(outRecCom, rs)
 
-		killObject(outRecords)
-
-	#   *******************************************************************
-		fieldmappings2 = arcpy.FieldMappings()
-		fieldmappings2.addTable(outRecCom)
-		fieldmappings2.addTable(censusRec)
-		for rs in remFields2:
-			x = fieldmappings2.findFieldMapIndex(rs)
-			fieldmappings2.removeFieldMap(x)
-
-		arcpy.SpatialJoin_analysis(outRecCom, censusRec, outRecords, "#", "#", fieldmappings2)
-		for rs in dropfieldsINSJ:
-			arcpy.DeleteField_management(outRecords, rs)
-
+		killObject(outRecords2)
+		arcpy.CopyFeatures_management(outRecCom, outRecords2)
 		killObject(outRecCom)
 
 
@@ -129,6 +113,7 @@ try:
 	# Initiate
 	killObject(outRecords)
 	killObject(outRecords2)
+	logging.debug("Killed old records")
 	killObject(layer)
 	#---Set Evnironment Settings
 	arcpy.env.workspace = r"R:\Geodatabase\Taxlots\SupportFiles"
@@ -136,6 +121,7 @@ try:
 
 	# Create a layer to join records to
 	arcpy.MakeFeatureLayer_management (taxSpatialRecord, layer, whereClauseSEl)
+	logging.debug("New Feature Layer made")
 
 	# Join Records to the properties table
 	arcpy.AddJoin_management(layer, "ASSESSOR_N", propTable, "ASSESSOR_N")
@@ -148,6 +134,7 @@ try:
 
 	# Delete Identical records
 	arcpy.DeleteIdentical_management(outRecords, "ASSESSOR_N")
+	logging.debug("Delete Identical Records")
 
 	# Add fields
 	arcpy.AddField_management(outRecords, "SOURCE_SEQ_NBR", "SHORT", 2)
@@ -156,33 +143,44 @@ try:
 	arcpy.AddField_management(outRecords, "UNIT", "TEXT", 10)
 	arcpy.AddField_management(outRecords, "STR_SUFFIX", "TEXT", 30)
 	arcpy.AddField_management(outRecords, "SITUS_STATE", "TEXT", 30)
+	logging.debug("Add new Fields")
 
 	# Parse Address
 	address_fields = "SITUS_ADDR"
 	locator_style = "US Address - Single House"
 	add_fields = "HouseNum;PreDir;PreType;StreetName;SufType;SufDir"
 	arcpy.StandardizeAddresses_geocoding(outRecords, address_fields, locator_style, add_fields, outRecords2)
+	killObject(outRecords)
+	logging.debug("Parcing addresses")
 
 	# Calculate Added Fields
+	# -- calculate SOURCE_SEQ_NBR
 	expression = "1"
 	arcpy.CalculateField_management(outRecords2, "SOURCE_SEQ_NBR", expression, "PYTHON_9.3")
+	# -- calculate SERV_PROV_CODE
 	expression = "'YAKIMACO'"
 	arcpy.CalculateField_management(outRecords2, "SERV_PROV_CODE", expression, "PYTHON_9.3")
+	# -- calculate SITUS_STATE
 	expression = "'WA'"
 	arcpy.CalculateField_management(outRecords2, "SITUS_STATE", expression, "PYTHON_9.3")
-
+	# -- calculate HOUSE
 	cursor = arcpy.UpdateCursor(outRecords2)
+	logging.debug("Calc New fields")
 	for row in cursor:
+		logging.debug("Curosr Return")
 		pickel = row.getValue(field)
 		r = getCorVar(pickel)
-		#logging.debug(type(r) + " - " + str(r))
+		#r = 34
+		if type(r) is int:
+			row.setValue(field2, r)
 		#row.setValue(field2, r)
-####			pickel2 = int(pickel)
-##			row.setValue(field2, pickel)
-##			cursor.updateRow(row)
-##
-	del row
+		cursor.updateRow(row)
 	del cursor
+	del row
+
+	# Spatial Join Building Footprints
+	spatialJoins()
+	logging.shutdown()
 
 ##		arcpy.DeleteField_management(outRecords, "RTS")
 ##		spatialJoins()
