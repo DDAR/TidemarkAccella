@@ -20,9 +20,11 @@ from datetime import date
 from datetime import datetime
 reload(sys)
 sys.setdefaultencoding('utf8')
+import logging
 
 
 # Variables ---------------------------
+logging.basicConfig(filename=r'd:\data\temp\logFile.txt', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 taxSpatialRecord = r"M:\Geodatabase\Taxlots\Taxlots.gdb\parcels"
 partyTable = r"M:\Geodatabase\Taxlots\Tables.gdb\Party"
 legalTable = r"M:\Geodatabase\Taxlots\Tables.gdb\Legal"
@@ -51,123 +53,136 @@ def killObject( object ):
 		arcpy.Delete_management(object)
 
 def spatialJoins():
-    try:
-        killObject(outRecCom)
-        #killObject(outRecCen)
-        fieldmappings = arcpy.FieldMappings()
-        fieldmappings.addTable(outRecords)
-        fieldmappings.addTable(commishRec)
-        for rr in remFields:
-            x = fieldmappings.findFieldMapIndex(rr)
-            fieldmappings.removeFieldMap(x)
+	try:
+		killObject(outRecCom)
+		#killObject(outRecCen)
+		fieldmappings = arcpy.FieldMappings()
+		fieldmappings.addTable(outRecords)
+		fieldmappings.addTable(commishRec)
+		for rr in remFields:
+			x = fieldmappings.findFieldMapIndex(rr)
+			fieldmappings.removeFieldMap(x)
 
-        arcpy.SpatialJoin_analysis(outRecords, commishRec, outRecCom, "#", "#", fieldmappings)
-        for rs in dropfieldsINSJ:
-            arcpy.DeleteField_management(outRecCom, rs)
+		arcpy.SpatialJoin_analysis(outRecords, commishRec, outRecCom, "#", "#", fieldmappings)
+		for rs in dropfieldsINSJ:
+			arcpy.DeleteField_management(outRecCom, rs)
 
-        killObject(outRecords)
+		killObject(outRecords)
 
-    #   *******************************************************************
-        fieldmappings2 = arcpy.FieldMappings()
-        fieldmappings2.addTable(outRecCom)
-        fieldmappings2.addTable(censusRec)
-        for rs in remFields2:
-            x = fieldmappings2.findFieldMapIndex(rs)
-            fieldmappings2.removeFieldMap(x)
+	#   *******************************************************************
+		fieldmappings2 = arcpy.FieldMappings()
+		fieldmappings2.addTable(outRecCom)
+		fieldmappings2.addTable(censusRec)
+		for rs in remFields2:
+			x = fieldmappings2.findFieldMapIndex(rs)
+			fieldmappings2.removeFieldMap(x)
 
-        arcpy.SpatialJoin_analysis(outRecCom, censusRec, outRecords, "#", "#", fieldmappings2)
-        for rs in dropfieldsINSJ:
-            arcpy.DeleteField_management(outRecords, rs)
+		arcpy.SpatialJoin_analysis(outRecCom, censusRec, outRecords, "#", "#", fieldmappings2)
+		for rs in dropfieldsINSJ:
+			arcpy.DeleteField_management(outRecords, rs)
 
-        killObject(outRecCom)
+		killObject(outRecCom)
 
 
-    except IOError as e:
-        print 'Exception error is: %s' % e
+	except IOError as e:
+		print 'Exception error is: %s' % e
 
 def SQLEsc(s):
-    if s == None:
-        return "NULL"
-    else:
-        return "'"+string.replace(s, "'", "''")+"'"
+	if s == None:
+		return "NULL"
+	else:
+		return "'"+string.replace(s, "'", "''")+"'"
 
 def SQLEsc2(s):
-    if s == None:
-        return "NULL"
-    else:
-        return s
+	if s == None:
+		return "NULL"
+	else:
+		return s
+
+def getCorVar(corV):
+	if corV == None:
+		return "NULL"
+	else:
+		if corV.isdigit():
+			return int(corV)
+		else:
+			return "NULL"
+
 
 ##def addTableRec(source, parcid, census, commish, marketv, insnum, marketland, legalLine, parc, parcArea, township, rangeT, section, primary, cursort):
-##    try:
-##        #cxnCursor = con.cursor()
-##        #insertStr = """INSERT INTO dbo.Parcel_base(SOURCE_SEQ_NBR, L1_PARCEL_NBR, L1_CENSUS_TRACT, L1_COUNCIL_DISTRICT, L1_IMPROVED_VALUE, L1_INSPECTION_DISTRICT, L1_LAND_VALUE, L1_LEGAL_DESC, L1_PARCEL, L1_PARCEL_AREA, GIS_ID, L1_TOWNSHIP, L1_RANGE, L1_SECTION, L1_PRIMARY_PAR_FLG)
-##         #VALUES('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}', '{8}', '{9}', '{10}', '{11}', '{12}', '{13}', '{14}')""".format(source, parcid, census, commish, marketv, insnum, marketland, legalLine, parc, parcArea, parcid, township, rangeT, section, primary)
-##        insertStr = """INSERT INTO dbo.Parcel_base(SOURCE_SEQ_NBR, L1_PARCEL_NBR, l1_Census_tract, L1_Council_District, L1_Improved_Value, L1_Inspection_district, L1_Land_Value, L1_LEGAL_DESC, L1_Parcel, L1_Parcel_Area, GIS_ID, L1_Township, L1_Range, L1_Section, L1_Primary_Par_Flg) VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14})""".format(SQLEsc2(source), SQLEsc2(parcid), SQLEsc2(census), SQLEsc2(commish), SQLEsc2(marketv), SQLEsc2(insnum), SQLEsc2(marketland), SQLEsc(legalLine), SQLEsc2(parc), SQLEsc2(parcArea), SQLEsc2(parcid), SQLEsc2(township), SQLEsc2(rangeT), SQLEsc2(section), SQLEsc(primary))
-##        #print insertStr
-##        cursort.execute(insertStr)
-##        con.commit()
-##    except IOError as e:
-##        print "Error in AddTable Rec"
-##        print 'Exception error is: %s' % e
-##        print insertStr
+##	try:
+##		#cxnCursor = con.cursor()
+##		#insertStr = """INSERT INTO dbo.Parcel_base(SOURCE_SEQ_NBR, L1_PARCEL_NBR, L1_CENSUS_TRACT, L1_COUNCIL_DISTRICT, L1_IMPROVED_VALUE, L1_INSPECTION_DISTRICT, L1_LAND_VALUE, L1_LEGAL_DESC, L1_PARCEL, L1_PARCEL_AREA, GIS_ID, L1_TOWNSHIP, L1_RANGE, L1_SECTION, L1_PRIMARY_PAR_FLG)
+##		 #VALUES('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}', '{8}', '{9}', '{10}', '{11}', '{12}', '{13}', '{14}')""".format(source, parcid, census, commish, marketv, insnum, marketland, legalLine, parc, parcArea, parcid, township, rangeT, section, primary)
+##		insertStr = """INSERT INTO dbo.Parcel_base(SOURCE_SEQ_NBR, L1_PARCEL_NBR, l1_Census_tract, L1_Council_District, L1_Improved_Value, L1_Inspection_district, L1_Land_Value, L1_LEGAL_DESC, L1_Parcel, L1_Parcel_Area, GIS_ID, L1_Township, L1_Range, L1_Section, L1_Primary_Par_Flg) VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14})""".format(SQLEsc2(source), SQLEsc2(parcid), SQLEsc2(census), SQLEsc2(commish), SQLEsc2(marketv), SQLEsc2(insnum), SQLEsc2(marketland), SQLEsc(legalLine), SQLEsc2(parc), SQLEsc2(parcArea), SQLEsc2(parcid), SQLEsc2(township), SQLEsc2(rangeT), SQLEsc2(section), SQLEsc(primary))
+##		#print insertStr
+##		cursort.execute(insertStr)
+##		con.commit()
+##	except IOError as e:
+##		print "Error in AddTable Rec"
+##		print 'Exception error is: %s' % e
+##		print insertStr
 
 
-def main():
-	try:
-		# Initiate
-		killObject(outRecords)
-		killObject(outRecords2)
-		killObject(layer)
-		#---Set Evnironment Settings
-		arcpy.env.workspace = r"R:\Geodatabase\Taxlots\SupportFiles"
-		arcpy.env.qualifiedFieldNames = False
 
-		# Create a layer to join records to
-		arcpy.MakeFeatureLayer_management (taxSpatialRecord, layer, whereClauseSEl)
+try:
+	# Initiate
+	killObject(outRecords)
+	killObject(outRecords2)
+	killObject(layer)
+	#---Set Evnironment Settings
+	arcpy.env.workspace = r"R:\Geodatabase\Taxlots\SupportFiles"
+	arcpy.env.qualifiedFieldNames = False
 
-		# Join Records to the properties table
-		arcpy.AddJoin_management(layer, "ASSESSOR_N", propTable, "ASSESSOR_N")
+	# Create a layer to join records to
+	arcpy.MakeFeatureLayer_management (taxSpatialRecord, layer, whereClauseSEl)
 
-		# Create the feature class in the geodatabase and drop fields
-		arcpy.CopyFeatures_management(layer, outRecords)
-		dropFields = ["AREA", "PERIMETER", "CNTYPARC_", "CNTYPARC_I", "RTS", "PARC", "ACRES", "OBJECTID_1", "ASSESSOR_N_1", "TCA", "TAX_YEAR", "USE_CODE", "LOCATED_ON", "MKT_LAND", "MKT_IMPVT", "NEW_CONST", "CU_LAND",
-		 "CU_IMPVT", "SIZE", "MEASURE", "CU_DATE", "CU_VALUE", "CYCLE", "NBHD", "INS_DATE",  "INS_NUM", "CUR_CYCLE", "HOUSE_NO",]
-		arcpy.DeleteField_management(outRecords, dropFields)
+	# Join Records to the properties table
+	arcpy.AddJoin_management(layer, "ASSESSOR_N", propTable, "ASSESSOR_N")
 
-		# Delete Identical records
-		arcpy.DeleteIdentical_management(outRecords, "ASSESSOR_N")
+	# Create the feature class in the geodatabase and drop fields
+	arcpy.CopyFeatures_management(layer, outRecords)
+	dropFields = ["AREA", "PERIMETER", "CNTYPARC_", "CNTYPARC_I", "RTS", "PARC", "ACRES", "OBJECTID_1", "ASSESSOR_N_1", "TCA", "TAX_YEAR", "USE_CODE", "LOCATED_ON", "MKT_LAND", "MKT_IMPVT", "NEW_CONST", "CU_LAND",
+	 "CU_IMPVT", "SIZE", "MEASURE", "CU_DATE", "CU_VALUE", "CYCLE", "NBHD", "INS_DATE",  "INS_NUM", "CUR_CYCLE", "HOUSE_NO",]
+	arcpy.DeleteField_management(outRecords, dropFields)
 
-		# Add fields
-		arcpy.AddField_management(outRecords, "SOURCE_SEQ_NBR", "SHORT", 2)
-		arcpy.AddField_management(outRecords, "SERV_PROV_CODE", "TEXT", 15)
-		arcpy.AddField_management(outRecords, "HOUSE", "LONG")
-		arcpy.AddField_management(outRecords, "UNIT", "TEXT", 10)
-		arcpy.AddField_management(outRecords, "STR_SUFFIX", "TEXT", 30)
-		arcpy.AddField_management(outRecords, "SITUS_STATE", "TEXT", 30)
+	# Delete Identical records
+	arcpy.DeleteIdentical_management(outRecords, "ASSESSOR_N")
 
-		# Parse Address
-		address_fields = "SITUS_ADDR"
-		locator_style = "US Address - Single House"
-		add_fields = "HouseNum;PreDir;PreType;StreetName;SufType;SufDir"
-		arcpy.StandardizeAddresses_geocoding(outRecords, address_fields, locator_style, add_fields, outRecords2)
+	# Add fields
+	arcpy.AddField_management(outRecords, "SOURCE_SEQ_NBR", "SHORT", 2)
+	arcpy.AddField_management(outRecords, "SERV_PROV_CODE", "TEXT", 15)
+	arcpy.AddField_management(outRecords, "HOUSE", "LONG")
+	arcpy.AddField_management(outRecords, "UNIT", "TEXT", 10)
+	arcpy.AddField_management(outRecords, "STR_SUFFIX", "TEXT", 30)
+	arcpy.AddField_management(outRecords, "SITUS_STATE", "TEXT", 30)
 
-		# Calculate Added Fields
-		expression = "1"
-		arcpy.CalculateField_management(outRecords2, "SOURCE_SEQ_NBR", expression, "PYTHON_9.3")
-		expression = "'YAKIMACO'"
-		arcpy.CalculateField_management(outRecords2, "SERV_PROV_CODE", expression, "PYTHON_9.3")
-		expression = "'WA'"
-		arcpy.CalculateField_management(outRecords2, "SITUS_STATE", expression, "PYTHON_9.3")
+	# Parse Address
+	address_fields = "SITUS_ADDR"
+	locator_style = "US Address - Single House"
+	add_fields = "HouseNum;PreDir;PreType;StreetName;SufType;SufDir"
+	arcpy.StandardizeAddresses_geocoding(outRecords, address_fields, locator_style, add_fields, outRecords2)
 
-		cursor = arcpy.UpdateCursor(outRecords2)
-		for row in cursor:
-			pickel = row.getValue(field)
-##			pickel2 = int(pickel)
-			row.setValue(field2, pickel)
-			cursor.updateRow(row)
+	# Calculate Added Fields
+	expression = "1"
+	arcpy.CalculateField_management(outRecords2, "SOURCE_SEQ_NBR", expression, "PYTHON_9.3")
+	expression = "'YAKIMACO'"
+	arcpy.CalculateField_management(outRecords2, "SERV_PROV_CODE", expression, "PYTHON_9.3")
+	expression = "'WA'"
+	arcpy.CalculateField_management(outRecords2, "SITUS_STATE", expression, "PYTHON_9.3")
 
-		del row
-		del cursor
+	cursor = arcpy.UpdateCursor(outRecords2)
+	for row in cursor:
+		pickel = row.getValue(field)
+		r = getCorVar(pickel)
+		#logging.debug(type(r) + " - " + str(r))
+		#row.setValue(field2, r)
+####			pickel2 = int(pickel)
+##			row.setValue(field2, pickel)
+##			cursor.updateRow(row)
+##
+	del row
+	del cursor
 
 ##		arcpy.DeleteField_management(outRecords, "RTS")
 ##		spatialJoins()
@@ -209,12 +224,9 @@ def main():
 ##		del cursort
 
 
-	except arcpy.ExecuteError:
-	   msgs = arcpy.GetMessages(2)
-	   print arcpy.AddMessage("There was a problem...script bailing")
-	   arcpy.AddError(msgs)
-	   print msgs
+except arcpy.ExecuteError:
+   msgs = arcpy.GetMessages(2)
+   print arcpy.AddMessage("There was a problem...script bailing")
+   arcpy.AddError(msgs)
+   print msgs
 
-
-if __name__ == '__main__':
-	main()
