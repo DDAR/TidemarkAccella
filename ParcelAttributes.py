@@ -1,11 +1,11 @@
 #-------------------------------------------------------------------------------
-# Name:		ParcelAddressTable.py
+# Name:		ParcelAttributes.py
 # Purpose:	 To create a table from parcels and parcel tables to be inputed
 #			  into the Tidemark-Accella system
 #
 # Author:	  donnaa
 #
-# Created:	 26/04/2017
+# Created:	 02/05/2017
 # Copyright:   (c) donnaa 2017
 # Licence:	 <your licence>
 #-------------------------------------------------------------------------------
@@ -15,64 +15,25 @@ import sys
 import arcpy
 import time
 import pyodbc
+import logging
+import traceback
 from arcpy import env
 from datetime import date
 from datetime import datetime
 reload(sys)
 sys.setdefaultencoding('utf8')
-import logging
-import traceback
-arcpy.env.workspace = r"M:\Geodatabase\Taxlots\Tables.gdb"
-
 
 # Variables ---------------------------
-logging.basicConfig(filename=r'd:\data\temp\logFile.txt', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-taxSpatialRecord = r"M:\Geodatabase\Taxlots\Taxlots.gdb\parcels"
-propTable = r"M:\Geodatabase\Taxlots\Tables.gdb\Property"
-outRecords = r"R:\Geodatabase\Taxlots\Accela.gdb\Parcels_AddressTest1"
+logging.basicConfig(filename=r'd:\data\temp\logFile2.txt', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+outRecords = r"R:\Geodatabase\Taxlots\Accela.gdb\Parcel_AttrTest"
 outRecords2 = r"R:\Geodatabase\Taxlots\Accela.gdb\Parcels_AddressTest2"
-buildingLayer = r"R:\Geodatabase\Public_Safety\YakimaStreets.gdb\BuildingAddresses"
-outRecCom = r"R:\Geodatabase\Taxlots\Accela.gdb\ParcelAddress_BaseCom"
-remFields = ["STORIES", "ACRES", "OCCUPIED", "BorI", "BuildingClass", "BuildingName", "PRETYPE", "SUFDIR", "Author", "Updated", "LabelCM"]
-#, "ACRES", "OCCUPIED", "Borl", "BuildingClass", "BuildingName", "UNIT", "PREYTPE", "SUFDIR", "Author", "Updated", "LabelCM"]
-dropfieldsINSJ = ["Join_Count", "TARGET_FID"]
 layer = "manageAddtaxlots"
-whereClauseSEl = '"PARC" > 10000 AND "PARC" < 50000'
-layer3 = r"R:\Geodatabase\Taxlots\Accela.gdb\Parcels_AddressTest"
-field = 'ADDR_HN'
-field2 = 'HOUSE'
-field3 = "TOWNSHIP"
-field4 = "SECTION"
-field5 = "SEC"
 
 # Methods   ---------------------------
 
 def killObject( object ):
 	if arcpy.Exists(object):
 		arcpy.Delete_management(object)
-
-def spatialJoins():
-	try:
-		killObject(outRecCom)
-		#killObject(outRecCen)
-		fieldmappings = arcpy.FieldMappings()
-		fieldmappings.addTable(outRecords2)
-		fieldmappings.addTable(buildingLayer)
-		for rr in remFields:
-			x = fieldmappings.findFieldMapIndex(rr)
-			fieldmappings.removeFieldMap(x)
-
-		arcpy.SpatialJoin_analysis(outRecords2, buildingLayer, outRecCom, "JOIN_ONE_TO_ONE", "#", fieldmappings, "INTERSECT")
-		for rs in dropfieldsINSJ:
-			arcpy.DeleteField_management(outRecCom, rs)
-
-		killObject(outRecords2)
-		arcpy.CopyFeatures_management(outRecCom, outRecords2)
-		killObject(outRecCom)
-
-
-	except IOError as e:
-		print 'Exception error is: %s' % e
 
 def SQLEsc(s):
 	if s == None:
@@ -85,22 +46,6 @@ def SQLEsc2(s):
 		return None
 	else:
 		return s
-
-def SQLEsc3(s):
-    if s == None:
-        return "NULL"
-    else:
-        return '"'+str(s)+'"'
-
-def SQLEsc4(s):
-    if s == None:
-        mm = str(s)
-        if mm.isdigit():
-            return int(s)
-        else:
-            return None
-    else:
-        return "NULL"
 
 def getCorVar(corV):
 	if corV == None:
