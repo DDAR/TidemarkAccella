@@ -38,32 +38,11 @@ def killObject( object ):
 	if arcpy.Exists(object):
 		arcpy.Delete_management(object)
 
-def SQLEsc(s):
-	if s == None:
-		return "NULL"
-	else:
-		return "'"+string.replace(s, "'", "''")+"'"
-
-def SQLEsc2(s):
-	if s == None:
-		return None
-	else:
-		return s
-
-def getCorVar(corV):
-	if corV == None:
-		return "NULL"
-	else:
-		if corV.isdigit():
-			return int(corV)
-		else:
-			return "NULL"
-
 # ******* Script Starts ********************************
 try:
 	# Initiate
 	logging.info("Begining Parcel Atrributes python script")
-	killObject(outRecords)
+	#killObject(outRecords)
 	killObject(outRecords2)
 	killObject(layer)
 	logging.debug("Killed old records")
@@ -85,47 +64,75 @@ try:
 	logging.info("Removing Duplicate Records")
 	arcpy.DeleteIdentical_management(outRecords2, "ASSESSOR_N")
 	# Create Table
-	logging.info("Create a new table in Geodatabase")
-	arcpy.CreateTable_management(outPath, outName)
-	field1 = {'Name': 'ASSESSOR_N', 'Type': 'TEXT', 'Size': 11}
-	field2 = {'Name': 'ATTRIB_TEM', 'Type': 'TEXT', 'Size': 20}
-	field3 = {'Name': 'ATTRIB_NAM', 'Type': 'TEXT', 'Size': 30}
-	field4 = {'Name': 'ATTRIB_VAL', 'Type': 'TEXT', 'Size': 50}
-	field5 = {'Name': 'SEQ_SOURCE_NUM', 'Type': 'SHORT'}
-	arcpy.AddField_management(outRecords, field1['Name'], field1['Type'], field_length=field1['Size'])
-	arcpy.AddField_management(outRecords, field2['Name'], field2['Type'], field_length=field2['Size'])
-	arcpy.AddField_management(outRecords, field3['Name'], field3['Type'], field_length=field3['Size'])
-	arcpy.AddField_management(outRecords, field4['Name'], field4['Type'], field_length=field4['Size'])
-	arcpy.AddField_management(outRecords, field5['Name'], field5['Type'])
+##	logging.info("Create a new table in Geodatabase")
+##	arcpy.CreateTable_management(outPath, outName)
+##	field1 = {'Name': 'ASSESSOR_N', 'Type': 'TEXT', 'Size': 11}
+##	field2 = {'Name': 'ATTRIB_TEM', 'Type': 'TEXT', 'Size': 20}
+##	field3 = {'Name': 'ATTRIB_NAM', 'Type': 'TEXT', 'Size': 30}
+##	field4 = {'Name': 'ATTRIB_VAL', 'Type': 'TEXT', 'Size': 50}
+##	field5 = {'Name': 'SEQ_SOURCE_NUM', 'Type': 'SHORT'}
+##	arcpy.AddField_management(outRecords, field1['Name'], field1['Type'], field_length=field1['Size'])
+##	arcpy.AddField_management(outRecords, field2['Name'], field2['Type'], field_length=field2['Size'])
+##	arcpy.AddField_management(outRecords, field3['Name'], field3['Type'], field_length=field3['Size'])
+##	arcpy.AddField_management(outRecords, field4['Name'], field4['Type'], field_length=field4['Size'])
+##	arcpy.AddField_management(outRecords, field5['Name'], field5['Type'])
+	# Truncate table already made
+	arcpy.TruncateTable_management(outRecords)
+	# Create a list for all records
+	myList = []
+
 	# Populate the geodatabase table and the SQL table
 	logging.info("Populating databases with information")
-	attTem = 'PARCEL_ATTRIBUTES'
-	seQ = 1
-	cursor = arcpy.SearchCursor(outRecords2)
-	rocks = arcpy.InsertCursor(outRecords)
-	for row in cursor:
+	rows = arcpy.SearchCursor(outRecords2)
+	for row in rows:
 		assNum = row.getValue("ASSESSOR_N")
 		for a in range(1,15):
 			attNam = fieldsToKeep[a]
 			attVal = row.getValue(attNam)
-			#strMine = str(assNum) + ": " + str(attNam) + ": " + str(attVal)
-			#logging.debug(strMine)
-			rock = rocks.newRow()
-			rock.setValue("ASSESOR_N", assNum)
-			rock.setValue("ATTRIB_TEM", attTem)
-			rock.setValue("ATTRIB_NAM", attNam)
-			rock.setValue("ATTRIB_VAL", attVal)
-			rock.setValue("SEQ_SOURCE_NUM", seQ)
-			rocks.insert(rock)
-
-
-
-
-
-	del cursor
+			if attVal is None:
+				pass
+			else:
+				if isinstance(attVal, basestring):
+					val = str(attVal).replace(" ", "")
+					if len(val) > 0:
+						fList = [assNum, attNam, attVal]
+						myList.append(fList)
+				elif isinstance(attVal, int):
+					if attVal > 0:
+						fList = [assNum, attNam, attVal]
+						myList.append(fList)
+	del rows
 	del row
+	con = pyodbc.connect(r'DRIVER={ODBC Driver 11 for SQL Server};'
+	 r'SERVER=172.20.10.141;'
+	 r'DATABASE=Accela;'
+	 r'UID=Accela;'
+	 r'PWD=Pw4accela'
+	 )
+	cursort = con.cursor()
+	cursort.execute('TRUNCATE TABLE dbo.Parcel_Attr;')
+	con.commit()
+	rocks = arcpy.InsertCursor(outRecords)
+	for iList in myList:
+		rock = rocks.newRow()
+		rock.setValue("ASSESSOR_N", iList[0])
+		rock.setValue("ATTRIB_NAM", iList[1])
+		rock.setValue("ATTRIB_VAL", iList[2])
+		rocks.insertRow(rock)
+		SQLCommand = ("INSERT INTO dbo.Parcel_Attr" "(source_seq_nbr, L1_attrib_Temp_Name, L1_Parcel_Nbr, L1_Attrib_Name, L1_Attrib_value) " "VALUES (?,?,?,?,?)")
+		myValues = [1, 'PARCEL_ATTRIBUTES', iList[0], iList[1], iList[2]]
+		cursort.execute(SQLCommand,myValues)
+		con.commit()
 	del rocks
 	del rock
+	con.close()
+	del cursort
+	expression = "1"
+	arcpy.CalculateField_management(outRecords, "SEQ_SOURCE_NUM", expression, "PYTHON_9.3")
+	expression = "'PARCEL_ATTRIBUTES'"
+	arcpy.CalculateField_management(outRecords, "ATTRIB_TEM", expression, "PYTHON_9.3")
+	# closing up program
+	killObject(outRecords2)
 	logging.info("End of program; Program ran correctly as written")
 	logging.shutdown()
 
