@@ -24,7 +24,7 @@ reload(sys)
 sys.setdefaultencoding('utf8')
 
 # Variables ---------------------------
-logging.basicConfig(filename=r'd:\data\temp\logFile2.txt', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename=r"d:\data\temp\logFile3.txt", level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 outPath = r"R:\Geodatabase\Taxlots\Accela.gdb"
 outName = "Parcel_AttrTest"
 outRecords = r"R:\Geodatabase\Taxlots\Accela.gdb\Parcel_AttrTest"
